@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://unigym:unigym@localhost:5432/unigym
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: unigym
+          POSTGRES_USER: unigym
+          POSTGRES_PASSWORD: unigym
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U unigym -d unigym"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bun run db:generate
+      - run: bun run --cwd apps/api db:deploy
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run --cwd apps/api test:e2e
+      - run: bun run build
