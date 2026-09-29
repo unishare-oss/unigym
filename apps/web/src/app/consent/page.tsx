@@ -11,8 +11,9 @@ export default function ConsentPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!isPending && !session) window.location.replace("/login?next=/consent");
     if (session?.user.consentGivenAt) window.location.replace("/");
-  }, [session]);
+  }, [isPending, session]);
 
   useEffect(() => {
     void fetch("/api/legal/status")

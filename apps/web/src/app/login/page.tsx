@@ -55,7 +55,11 @@ export default function LoginPage() {
       )}
       <button
         className="rounded-md bg-primary px-5 py-3 text-primary-foreground"
-        onClick={() => void signInWithUniauth({ returnTo: next })}
+        onClick={() =>
+          void signInWithUniauth({ returnTo: next }).catch(() =>
+            setError("start_failed"),
+          )
+        }
       >
         Continue with uniAuth
       </button>

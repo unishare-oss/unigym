@@ -14,19 +14,22 @@ export function AuthBootstrap() {
     )
       return;
 
-    void authClient.getSession().then(({ data }) => {
-      if (data?.user) {
-        if (!data.user.consentGivenAt) window.location.replace("/consent");
-        return;
-      }
-      if (!silentCheckDone()) {
-        void signInWithUniauth({
-          returnTo: window.location.href,
-          errorReturnTo: window.location.href,
-          silent: true,
-        });
-      }
-    });
+    void authClient
+      .getSession()
+      .then(({ data }) => {
+        if (data?.user) {
+          if (!data.user.consentGivenAt) window.location.replace("/consent");
+          return;
+        }
+        if (!silentCheckDone()) {
+          void signInWithUniauth({
+            returnTo: window.location.href,
+            errorReturnTo: window.location.href,
+            silent: true,
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
   }, []);
   return null;
 }
