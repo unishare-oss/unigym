@@ -31,7 +31,7 @@ export async function startMockUniauth(client: { id: string; secret: string }) {
     use: 'sig',
   };
   const codes = new Map<string, PendingCode>();
-  let profile: MockProfile = {
+  let profile: MockProfile | null = {
     sub: randomUUID(),
     email: 'mya@example.com',
     name: 'Mya',
@@ -62,6 +62,14 @@ export async function startMockUniauth(client: { id: string; secret: string }) {
 
     if (url.pathname === '/api/auth/oauth2/authorize') {
       const redirectUri = url.searchParams.get('redirect_uri') ?? '';
+      const back = new URL(redirectUri);
+      back.searchParams.set('state', url.searchParams.get('state') ?? '');
+      if (!profile) {
+        // Not signed in here: what uniAuth answers to prompt=none.
+        back.searchParams.set('error', 'login_required');
+        res.writeHead(302, { location: back.toString() });
+        return res.end();
+      }
       const code = randomUUID();
       codes.set(code, {
         profile,
@@ -70,9 +78,7 @@ export async function startMockUniauth(client: { id: string; secret: string }) {
         codeChallenge: url.searchParams.get('code_challenge') ?? '',
         nonce: url.searchParams.get('nonce') ?? undefined,
       });
-      const back = new URL(redirectUri);
       back.searchParams.set('code', code);
-      back.searchParams.set('state', url.searchParams.get('state') ?? '');
       res.writeHead(302, { location: back.toString() });
       return res.end();
     }
@@ -135,8 +141,8 @@ export async function startMockUniauth(client: { id: string; secret: string }) {
 
   return {
     issuer,
-    /** The person the next authorize request signs in as. */
-    signInAs(next: MockProfile) {
+    /** The person the next authorize request signs in as. null = signed out. */
+    signInAs(next: MockProfile | null) {
       profile = next;
     },
     /** Signs an event token the way uniAuth does for its server-to-server calls. */
