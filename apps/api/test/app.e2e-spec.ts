@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { INestApplication } from '@nestjs/common';
+import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import {
@@ -14,6 +14,15 @@ const WEB_ORIGIN = 'http://127.0.0.1:3003';
 const CLIENT = { id: 'unigym-test', secret: 'unigym-test-secret' };
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EMAIL_DOMAIN = `e2e-${randomUUID()}.example`;
+
+/** A protected route like a future gym route: session and consent required. */
+@Controller('api/probe')
+class ProbeController {
+  @Get()
+  get() {
+    return 'ok';
+  }
+}
 
 describe('Unigym API (e2e)', () => {
   let app: INestApplication;
@@ -36,6 +45,7 @@ describe('Unigym API (e2e)', () => {
 
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
+      controllers: [ProbeController],
     }).compile();
     app = moduleFixture.createNestApplication({ bodyParser: false });
     await app.listen(0, '127.0.0.1');
@@ -236,6 +246,7 @@ describe('Unigym API (e2e)', () => {
         emailVerified: true,
         name: 'Mya',
         image: profile.picture,
+        consentGivenAt: null,
       });
     });
 
@@ -392,6 +403,80 @@ describe('Unigym API (e2e)', () => {
           where: { email: profile.email },
         }),
       ).toMatchObject({ name: 'Mya' });
+    });
+  });
+
+  describe('consent', () => {
+    const consent = (cookie?: string) => {
+      const req = request(app.getHttpServer()).post('/api/users/me/consent');
+      return cookie ? req.set('Cookie', cookie) : req;
+    };
+    const probe = (cookie?: string) => {
+      const req = request(app.getHttpServer()).get('/api/probe');
+      return cookie ? req.set('Cookie', cookie) : req;
+    };
+
+    it('POST /api/users/me/consent without a session → 401', async () => {
+      await consent().expect(401);
+    });
+
+    it('records consent once and keeps the first timestamp', async () => {
+      const { cookie } = await signIn(newProfile());
+
+      const first = await consent(cookie).expect(200);
+      expect(Date.parse(first.body.consentGivenAt)).toBeGreaterThan(
+        Date.now() - 60_000,
+      );
+      const second = await consent(cookie).expect(200);
+      expect(second.body.consentGivenAt).toBe(first.body.consentGivenAt);
+    });
+
+    it('a protected route without a session → 401', async () => {
+      await probe().expect(401);
+    });
+
+    it('a new user gets 403 consent_required, then is allowed after consent', async () => {
+      const { cookie } = await signIn(newProfile());
+
+      const blocked = await probe(cookie).expect(403);
+      expect(blocked.body.code).toBe('consent_required');
+
+      await consent(cookie).expect(200);
+      await probe(cookie).expect(200).expect('ok');
+    });
+
+    it('GET /api/me works without consent and shows consentGivenAt', async () => {
+      const { cookie } = await signIn(newProfile());
+
+      const before = await request(app.getHttpServer())
+        .get('/api/me')
+        .set('Cookie', cookie)
+        .expect(200);
+      expect(before.body.consentGivenAt).toBeNull();
+
+      const { body } = await consent(cookie).expect(200);
+      const after = await request(app.getHttpServer())
+        .get('/api/me')
+        .set('Cookie', cookie)
+        .expect(200);
+      expect(after.body.consentGivenAt).toBe(body.consentGivenAt);
+    });
+
+    it('health, auth and uniAuth receivers work for a user without consent', async () => {
+      const { cookie } = await signIn(newProfile());
+      const as = (req: request.Test) => req.set('Cookie', cookie);
+
+      await as(request(app.getHttpServer()).get('/health')).expect(200);
+      await as(request(app.getHttpServer()).get('/api/health')).expect(200);
+      const session = await as(
+        request(app.getHttpServer()).get('/api/auth/get-session'),
+      ).expect(200);
+      expect(session.body.user.consentGivenAt).toBeNull();
+      // Reaches the receiver: a bad token is its own 400, not the consent 403.
+      await as(request(app.getHttpServer()).post('/api/uniauth/user-updated'))
+        .type('form')
+        .send({ token: 'not-a-jwt' })
+        .expect(400);
     });
   });
 });

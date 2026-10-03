@@ -27,9 +27,12 @@ actually needs. Register feature modules in `src/app.module.ts`. Keep cross-feat
 HTTP helpers in `src/common/` if they become necessary. Keep auth configuration in
 `src/auth/` and database infrastructure in `src/prisma/`.
 
-`@thallesp/nestjs-better-auth` mounts Better Auth at `/api/auth/*` and guards every
-route by default. Mark public routes with `@AllowAnonymous()` and read the signed-in
-user with `@Session()`. Put new routes under `/api/`.
+`@thallesp/nestjs-better-auth` mounts Better Auth at `/api/auth/*`. Two global guards,
+registered in order in `src/app.module.ts`, protect every route: the session guard
+(`401`), then `ConsentGuard` (`403 consent_required` until the user accepts Unigym's
+terms). Mark public routes with `@AllowAnonymous()`, routes a signed-in user needs
+before consent with `@SkipConsent()`, and read the signed-in user with `@Session()`.
+Put new routes under `/api/`.
 
 ## Responsibilities
 
