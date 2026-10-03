@@ -59,3 +59,10 @@ export async function signOutEverywhere() {
   logout.searchParams.set("redirect", `${window.location.origin}/`);
   window.location.assign(logout);
 }
+
+/** uniAuth's account page (name, avatar, password, linked accounts), then back to `returnTo`. */
+export function uniauthAccountURL(returnTo: string) {
+  const account = new URL("/account", uniauthURL);
+  account.searchParams.set("redirect", returnTo);
+  return account.toString();
+}
