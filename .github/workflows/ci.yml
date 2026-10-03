@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://unigym:unigym@localhost:5432/unigym
+      # The e2e tests start their own mock uniAuth; these satisfy the startup check.
       BETTER_AUTH_URL: http://127.0.0.1:3003
       BETTER_AUTH_SECRET: ci-secret-at-least-thirty-two-characters
       UNIAUTH_ISSUER: http://127.0.0.1:39999/api/auth
       UNIAUTH_CLIENT_ID: ci-client
       UNIAUTH_CLIENT_SECRET: ci-client-secret
-      UNIGYM_LEGAL_APPROVED: "true"
     services:
       db:
         image: postgres:17-alpine

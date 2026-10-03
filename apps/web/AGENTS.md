@@ -7,3 +7,27 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# Web App Guide
+
+## Folder Structure
+
+```text
+apps/web/
+├── public/             # Static assets
+├── src/
+│   ├── app/            # App Router pages, layout, and global CSS
+│   ├── components/     # Feature components and shared UI primitives
+│   │   └── ui/         # shadcn-style UI components
+│   ├── lib/            # Browser utilities
+└── AGENTS.md
+```
+
+Keep pages in `src/app`, reusable UI in `src/components`, and browser helpers in
+`src/lib`. Use Server Components by default and client components when browser
+behavior requires them. Keep access control in the API.
+
+The web app proxies `/api/health` to the NestJS API through `next.config.ts`.
+
+For web changes, run `bun run --cwd apps/web lint`, `typecheck`, and `build` as
+appropriate. Read the Next.js guide noted above before changing Next.js APIs.

@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -8,26 +7,29 @@ datasource db {
   provider = "postgresql"
 }
 
+// Better Auth tables. People are matched by uniAuth `sub` through Account
+// (providerId "uniauth", accountId = sub), never by email.
+
 model User {
   id             String    @id
   name           String
-  email          String
+  email          String    @unique
   emailVerified  Boolean   @default(false)
   image          String?
+  /// When the user accepted Unigym's Terms and Privacy Policy. Null until they do.
+  consentGivenAt DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  consentGivenAt DateTime?
   sessions       Session[]
   accounts       Account[]
 
-  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id        String   @id
   expiresAt DateTime
-  token     String
+  token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   ipAddress String?
@@ -35,7 +37,6 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
   @@index([userId])
   @@map("session")
 }
@@ -56,8 +57,8 @@ model Account {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  @@index([userId])
   @@unique([providerId, accountId])
+  @@index([userId])
   @@map("account")
 }
 
