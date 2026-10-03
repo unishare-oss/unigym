@@ -1,8 +1,6 @@
 # Unigym
 
-Bun monorepo with a Next.js web app, NestJS API, Tailwind CSS, shadcn/ui, Prisma, and PostgreSQL. Authentication will be provided by a separate service in a future repository. Unigym currently has no login flow or protected member endpoint.
-
-The `Member` table has a provider-neutral `externalSubject` field so it can be linked to that service later. Its contract and token validation will be added when the service exists. The migration from the earlier Auth0 scaffold renames the column and preserves existing member rows.
+Bun monorepo with a Next.js web app, NestJS API, Tailwind CSS, shadcn/ui, Prisma, and PostgreSQL. People sign in through [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md) (OpenID Connect). The API uses Better Auth as the OIDC client and keeps Unigym's own session. Every API route needs a session unless it is marked `@AllowAnonymous()`.
 
 ## Start locally
 
@@ -14,6 +12,8 @@ cp apps/api/.env.example apps/api/.env
 bun run db:up
 bun run db:tunnel
 ```
+
+Sign-in needs a local uniAuth and a client for `http://127.0.0.1:3003`. Follow [uniAuth local development](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md#local-development), then set `UNIAUTH_CLIENT_ID`, `UNIAUTH_CLIENT_SECRET` and `BETTER_AUTH_SECRET` in `apps/api/.env`. The API refuses to start without them. The e2e tests do not need uniAuth: they start a mock provider.
 
 Keep the tunnel running in its own terminal. In another terminal:
 
@@ -27,13 +27,15 @@ Open <http://localhost:3000>. The API health endpoint is <http://localhost:3001/
 
 ## Structure
 
-| Path                       | Purpose                                               |
-| -------------------------- | ----------------------------------------------------- |
-| `apps/web`                 | Next.js App Router, Tailwind CSS, shadcn/ui           |
-| `apps/api`                 | NestJS, Prisma member model and migrations            |
-| `compose.yaml`             | Oracle-hosted PostgreSQL, loopback only               |
-| `scripts/remote-db-up.sh`  | Copy Compose file and start Oracle database           |
-| `.github/workflows/ci.yml` | Install, migration, lint, typecheck, tests, and build |
+| Path                               | Purpose                                               |
+| ---------------------------------- | ----------------------------------------------------- |
+| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui           |
+| `apps/api`                         | NestJS, Better Auth, Prisma schema and migrations     |
+| `compose.yaml`                     | Oracle-hosted PostgreSQL, loopback only               |
+| `scripts/remote-db-up.sh`          | Copy Compose file and start Oracle database           |
+| `.github/workflows/ci.yml`         | Install, migration, lint, typecheck, tests, and build |
+| `.github/workflows/images.yml`     | Build and push `linux/arm64` images to GHCR           |
+| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app             |
 
 Add gym domain models to `apps/api/prisma/schema.prisma` as requirements become concrete, then create a migration with `bun run db:migrate`.
 
@@ -47,4 +49,4 @@ bun run --cwd apps/api test:e2e
 bun run build
 ```
 
-The Git pre-commit hook formats staged files and runs lint and typecheck. `bun install` installs it in a Git checkout.
+The Git pre-commit hook formats staged files and runs lint and typecheck. CI also builds both `linux/arm64` Docker images. `bun install` installs it in a Git checkout.

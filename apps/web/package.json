@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun --bun next dev --webpack",
+    "dev": "bun --bun next dev --webpack -p 3003",
     "build": "bun --bun next build --webpack",
     "start": "bun --bun next start",
     "lint": "eslint",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "better-auth": "^1.7.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.4.0",
