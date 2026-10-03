@@ -15,7 +15,7 @@ unigym/
 │   └── web/             # Next.js App Router application
 ├── scripts/             # Local and Oracle database helpers
 ├── plans/               # Project plans
-├── .github/workflows/   # CI
+├── .github/workflows/   # CI, image builds, release (see README.md)
 ├── compose.yaml         # Oracle-hosted development PostgreSQL
 └── AGENTS.md            # Repository-wide instructions
 ```
@@ -27,6 +27,9 @@ contracts only when both workspaces actually need them.
 ## Working Rules
 
 - Do not create a git commit or push changes unless the user explicitly asks.
+- Write commit messages as Conventional Commits (`feat(api): ...`, `fix(web): ...`,
+  `chore: ...`); commitlint rejects others, and semantic-release versions from them.
+- Branch from `dev` and open pull requests into `dev`. `main` is for releases.
 - Preserve unrelated local changes. Do not add secrets or print `.env` values.
 - Follow the nearest app guide and existing code patterns. Prefer direct, readable
   changes over speculative layers.
