@@ -2,14 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { safeNext } from "@/lib/safe-next";
 import { signInWithUniauth, silentCheckDone } from "@/lib/uniauth";
-
-/** Same-origin paths only: "https://…", "//…" and "/\…" would leave Unigym. */
-function safeNext(next: string | null) {
-  if (!next?.startsWith("/")) return "/";
-  const { origin } = window.location;
-  return new URL(next, origin).origin === origin ? next : "/";
-}
 
 export default function Login() {
   const [params] = useState(() => new URLSearchParams(window.location.search));

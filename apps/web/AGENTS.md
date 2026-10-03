@@ -34,5 +34,10 @@ protected pages to `/login`; it only checks that the cookie exists, and the API 
 real check. Set `API_URL` (server) and `NEXT_PUBLIC_UNIAUTH_URL` (build time); see
 `.env.example`.
 
+Call the API through `apiFetch` (`src/lib/api.ts`): a `403 consent_required` sends the
+user to `/consent`. `AuthBootstrap` in the layout reads the session on every page: it
+sends users without consent to `/consent` and runs the silent uniAuth check for
+signed-out visitors.
+
 For web changes, run `bun run --cwd apps/web lint`, `typecheck`, and `build` as
 appropriate. Read the Next.js guide noted above before changing Next.js APIs.
