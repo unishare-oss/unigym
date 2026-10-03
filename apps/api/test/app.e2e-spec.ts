@@ -2,6 +2,11 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import {
+  LOGOUT_EVENT,
+  USER_DELETED_EVENT,
+  USER_UPDATED_EVENT,
+} from '../src/modules/uniauth/uniauth-event-token.js';
 import type { PrismaService } from '../src/prisma/prisma.service.js';
 import { startMockUniauth, type MockProfile } from './support/mock-uniauth.js';
 
@@ -243,6 +248,150 @@ describe('Unigym API (e2e)', () => {
         .expect(200);
 
       expect(res.body.image).toBeNull();
+    });
+  });
+
+  describe('uniAuth receivers', () => {
+    const post = (path: string, form: Record<string, string>) =>
+      request(app.getHttpServer())
+        .post(`/api/uniauth/${path}`)
+        .type('form')
+        .send(form);
+    const RECEIVERS = [
+      {
+        path: 'backchannel-logout',
+        field: 'logout_token',
+        event: LOGOUT_EVENT,
+      },
+      { path: 'user-deleted', field: 'token', event: USER_DELETED_EVENT },
+      { path: 'user-updated', field: 'token', event: USER_UPDATED_EVENT },
+    ];
+
+    it.each(RECEIVERS)('$path: missing token → 400', async ({ path }) => {
+      await post(path, {}).expect(400);
+    });
+
+    it.each(RECEIVERS)(
+      '$path: invalid token → 400',
+      async ({ path, field }) => {
+        await post(path, { [field]: 'not-a-jwt' }).expect(400);
+      },
+    );
+
+    it.each(RECEIVERS)(
+      '$path: unknown sub → 200 and no change',
+      async ({ path, field, event }) => {
+        const profile = newProfile();
+        await signIn(profile);
+        const before = await prisma.user.findUniqueOrThrow({
+          where: { email: profile.email },
+          include: { sessions: true },
+        });
+
+        const token = await uniauth.signEvent(`u_${randomUUID()}`, {
+          [event]: { name: 'Changed' },
+        });
+        await post(path, { [field]: token }).expect(200);
+
+        expect(
+          await prisma.user.findUniqueOrThrow({
+            where: { email: profile.email },
+            include: { sessions: true },
+          }),
+        ).toEqual(before);
+      },
+    );
+
+    it('backchannel-logout ends every session of the user', async () => {
+      const profile = newProfile();
+      const first = await signIn(profile);
+      const second = await signIn(profile);
+
+      const token = await uniauth.signEvent(profile.sub, {
+        [LOGOUT_EVENT]: {},
+      });
+      await post('backchannel-logout', { logout_token: token }).expect(200);
+
+      expect(
+        await prisma.session.count({
+          where: { user: { email: profile.email } },
+        }),
+      ).toBe(0);
+      for (const { cookie } of [first, second]) {
+        await request(app.getHttpServer())
+          .get('/api/me')
+          .set('Cookie', cookie)
+          .expect(401);
+      }
+    });
+
+    it('user-deleted rejects a logout token and keeps the user', async () => {
+      const profile = newProfile();
+      await signIn(profile);
+
+      const token = await uniauth.signEvent(profile.sub, {
+        [LOGOUT_EVENT]: {},
+      });
+      await post('user-deleted', { token }).expect(400);
+
+      expect(await prisma.user.count({ where: { email: profile.email } })).toBe(
+        1,
+      );
+    });
+
+    it('user-deleted removes the user, accounts and sessions', async () => {
+      const profile = newProfile();
+      await signIn(profile);
+      const { id } = await prisma.user.findUniqueOrThrow({
+        where: { email: profile.email },
+      });
+
+      const token = await uniauth.signEvent(profile.sub, {
+        [USER_DELETED_EVENT]: {},
+      });
+      await post('user-deleted', { token }).expect(200);
+
+      expect(await prisma.user.count({ where: { id } })).toBe(0);
+      expect(await prisma.account.count({ where: { userId: id } })).toBe(0);
+      expect(await prisma.session.count({ where: { userId: id } })).toBe(0);
+    });
+
+    it('user-updated refreshes the copy', async () => {
+      const profile = newProfile({
+        picture: 'https://auth.psstee.dev/api/avatars/a.png',
+      });
+      await signIn(profile);
+      const newEmail = `${randomUUID()}@${EMAIL_DOMAIN}`;
+
+      const token = await uniauth.signEvent(profile.sub, {
+        [USER_UPDATED_EVENT]: {
+          email: newEmail.toUpperCase(),
+          email_verified: false,
+          name: 'Mya Mya',
+          picture: null,
+        },
+      });
+      await post('user-updated', { token }).expect(200);
+
+      expect(
+        await prisma.user.findUniqueOrThrow({ where: { email: newEmail } }),
+      ).toMatchObject({ name: 'Mya Mya', emailVerified: false, image: null });
+    });
+
+    it('user-updated keeps the name when the new one is empty', async () => {
+      const profile = newProfile();
+      await signIn(profile);
+
+      const token = await uniauth.signEvent(profile.sub, {
+        [USER_UPDATED_EVENT]: { name: '' },
+      });
+      await post('user-updated', { token }).expect(200);
+
+      expect(
+        await prisma.user.findUniqueOrThrow({
+          where: { email: profile.email },
+        }),
+      ).toMatchObject({ name: 'Mya' });
     });
   });
 });

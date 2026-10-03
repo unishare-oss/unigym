@@ -139,6 +139,18 @@ export async function startMockUniauth(client: { id: string; secret: string }) {
     signInAs(next: MockProfile) {
       profile = next;
     },
+    /** Signs an event token the way uniAuth does for its server-to-server calls. */
+    signEvent(sub: string, events: Record<string, object>) {
+      return new SignJWT({ events })
+        .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+        .setIssuer(issuer)
+        .setAudience(client.id)
+        .setSubject(sub)
+        .setJti(randomUUID())
+        .setIssuedAt()
+        .setExpirationTime('2m')
+        .sign(privateKey);
+    },
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 }
