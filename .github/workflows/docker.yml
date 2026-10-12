@@ -188,8 +188,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.GITOPS_APP_ID }}
-          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.GITOPS_APP_ID || secrets.APP_ID }}
+          private-key: ${{ secrets.GITOPS_APP_PRIVATE_KEY || secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: k8s-practice
 
