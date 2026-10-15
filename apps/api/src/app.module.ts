@@ -8,6 +8,7 @@ import { ConsentGuard } from './auth/consent.guard.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { UniauthModule } from './modules/uniauth/uniauth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { TelemetryLifecycleService } from './telemetry-lifecycle.service.js';
 
 @Module({
   // AuthModule mounts Better Auth at /api/auth/*. Every route needs a session and consent
@@ -20,6 +21,7 @@ import { UsersModule } from './modules/users/users.module.js';
   ],
   controllers: [AppController],
   providers: [
+    TelemetryLifecycleService,
     AppService,
     // Global guards run in this order: the session guard puts the user on the request,
     // then ConsentGuard reads it.
