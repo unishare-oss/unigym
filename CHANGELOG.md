@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/unishare-oss/unigym/compare/v1.0.0...v1.1.0) (2026-10-18)
+
+
+### Bug Fixes
+
+* **ci:** isolate feature builds from deployment write-back ([8a3ff6f](https://github.com/unishare-oss/unigym/commit/8a3ff6fb94439bde8c7e282abbee856bf6379e3e))
+
+
+### Features
+
+* **api:** replace the NestJS API with Go and Gin ([bc30abe](https://github.com/unishare-oss/unigym/commit/bc30abef622a595cda855ebd967525532d154356))
+* **api:** trace requests and outgoing fetch calls ([e4bf78d](https://github.com/unishare-oss/unigym/commit/e4bf78d8928860665d0fcbbeb337b733f4d1ddb9))
+
 # 1.0.0 (2026-10-12)
 
 
