@@ -62,11 +62,15 @@ jobs:
           else
             ENV=dev
             VALUES_FILE="$DEV_VALUES_FILE"
-            # The web image bakes API_URL and NEXT_PUBLIC_* at build time, so the same
+            # The web image bakes API_URL at build time, so the same
             # commit produces a different web image per environment. The suffix keeps
             # them from overwriting each other; the API carries it too for one pattern.
             TAG_SUFFIX="-dev"
             MOVING_TAG=dev
+          fi
+          # Preview builds get an isolated tag and never replace a shared moving tag.
+          if [ "$REF_NAME" != "main" ] && [ "$REF_NAME" != "dev" ]; then
+            MOVING_TAG="preview-${GITHUB_RUN_ID}"
           fi
           {
             echo "env=$ENV"
@@ -163,7 +167,6 @@ jobs:
             ghcr.io/${{ env.OWNER }}/unigym-web:sha-${{ github.sha }}${{ needs.changes.outputs.tag_suffix }}
           build-args: |
             API_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_API_URL || vars.API_URL || 'http://unigym-api.unigym.svc.cluster.local:3001' }}
-            NEXT_PUBLIC_UNIAUTH_URL=${{ needs.changes.outputs.env == 'dev' && vars.DEV_UNIAUTH_URL || vars.UNIAUTH_URL || 'https://auth.psstee.me' }}
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 

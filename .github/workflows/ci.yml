@@ -12,12 +12,6 @@ jobs:
     if: github.actor != 'unishare-release-bot[bot]'
     env:
       DATABASE_URL: postgresql://unigym:unigym@localhost:5432/unigym
-      # The e2e tests start their own mock uniAuth; these satisfy the startup check.
-      BETTER_AUTH_URL: http://127.0.0.1:3003
-      BETTER_AUTH_SECRET: ci-secret-at-least-thirty-two-characters
-      UNIAUTH_ISSUER: http://127.0.0.1:39999/api/auth
-      UNIAUTH_CLIENT_ID: ci-client
-      UNIAUTH_CLIENT_SECRET: ci-client-secret
     services:
       db:
         image: postgres:17-alpine
@@ -37,11 +31,13 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
       - run: bun install --frozen-lockfile
-      - run: bun run db:generate
       - run: bun run --cwd apps/api db:deploy
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run test
-      - run: bun run --cwd apps/api test:e2e
       - run: bun run build

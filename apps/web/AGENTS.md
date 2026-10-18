@@ -27,17 +27,9 @@ Keep pages in `src/app`, reusable UI in `src/components`, and browser helpers in
 `src/lib`. Use Server Components by default and client components when browser
 behavior requires them. Keep access control in the API.
 
-The web app proxies `/api/*` to the NestJS API through `next.config.ts`, so Better
-Auth's callback and the `unigym` session cookie stay on the web host. Sign in and out
-only through `src/lib/uniauth.ts`. `src/proxy.ts` redirects signed-out visitors on
-protected pages to `/login`; it only checks that the cookie exists, and the API does the
-real check. Set `API_URL` (server) and `NEXT_PUBLIC_UNIAUTH_URL` (build time); see
-`.env.example`.
-
-Call the API through `apiFetch` (`src/lib/api.ts`): a `403 consent_required` sends the
-user to `/consent`. `AuthBootstrap` in the layout reads the session on every page: it
-sends users without consent to `/consent` and runs the silent uniAuth check for
-signed-out visitors.
+The web app proxies `/api/*` to the Go API through `next.config.ts`, so the browser
+only talks to the web origin. Set `API_URL` (server); see `.env.example`. Sign-in is
+removed for now and will come back with the API's auth.
 
 For web changes, run `bun run --cwd apps/web lint`, `typecheck`, and `build` as
 appropriate. Read the Next.js guide noted above before changing Next.js APIs.

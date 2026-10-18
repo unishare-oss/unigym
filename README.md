@@ -1,10 +1,10 @@
 # Unigym
 
-Bun monorepo with a Next.js web app, NestJS API, Tailwind CSS, shadcn/ui, Prisma, and PostgreSQL. People sign in through [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md) (OpenID Connect). The API uses Better Auth as the OIDC client and keeps Unigym's own session. Every API route needs a session unless it is marked `@AllowAnonymous()`.
+Bun monorepo with a Next.js web app (Tailwind CSS, shadcn/ui) and a Go API (Gin, pgx, goose, sqlc) on PostgreSQL. Sign-in is removed for now; it will come back through [uniAuth](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md).
 
 ## Start locally
 
-Requirements: Bun 1.4.2 and the configured `ssh oracle` host. Docker runs on Oracle; the web and API apps run locally.
+Requirements: Bun 1.4.2, Go 1.26, and the configured `ssh oracle` host. Docker runs on Oracle; the web and API apps run locally.
 
 ```sh
 bun install
@@ -13,12 +13,9 @@ bun run db:up
 bun run db:tunnel
 ```
 
-Sign-in needs a local uniAuth and a client for `http://127.0.0.1:3003`. Follow [uniAuth local development](https://github.com/unishare-oss/uniAuth/blob/main/docs/integrating-an-app.md#local-development), then set `UNIAUTH_CLIENT_ID`, `UNIAUTH_CLIENT_SECRET` and `BETTER_AUTH_SECRET` in `apps/api/.env`. The API refuses to start without them. The e2e tests do not need uniAuth: they start a mock provider.
-
 Keep the tunnel running in its own terminal. In another terminal:
 
 ```sh
-bun run db:generate
 bun run db:migrate
 bun run dev
 ```
@@ -27,16 +24,16 @@ Open <http://localhost:3000>. The API health endpoint is <http://localhost:3001/
 
 ## Structure
 
-| Path                               | Purpose                                           |
-| ---------------------------------- | ------------------------------------------------- |
-| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui       |
-| `apps/api`                         | NestJS, Better Auth, Prisma schema and migrations |
-| `compose.yaml`                     | Oracle-hosted PostgreSQL, loopback only           |
-| `scripts/remote-db-up.sh`          | Copy Compose file and start Oracle database       |
-| `.github/workflows/`               | CI, image builds, release (see below)             |
-| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app         |
+| Path                               | Purpose                                     |
+| ---------------------------------- | ------------------------------------------- |
+| `apps/web`                         | Next.js App Router, Tailwind CSS, shadcn/ui |
+| `apps/api`                         | Go API: Gin, goose migrations, sqlc queries |
+| `compose.yaml`                     | Oracle-hosted PostgreSQL, loopback only     |
+| `scripts/remote-db-up.sh`          | Copy Compose file and start Oracle database |
+| `.github/workflows/`               | CI, image builds, release (see below)       |
+| `Dockerfile.api`, `Dockerfile.web` | Production images for the API and web app   |
 
-Add gym domain models to `apps/api/prisma/schema.prisma` as requirements become concrete, then create a migration with `bun run db:migrate`.
+Add gym tables as goose migrations in `apps/api/migrations/` and their queries in `apps/api/queries/`, then run `bun run db:migrate` and `bun run db:generate` (sqlc). Production images embed the migrations: run `/api migrate up` before starting a new version.
 
 ## Checks
 
@@ -44,11 +41,10 @@ Add gym domain models to `apps/api/prisma/schema.prisma` as requirements become 
 bun run lint
 bun run typecheck
 bun run test
-bun run --cwd apps/api test:e2e
 bun run build
 ```
 
-The Git pre-commit hook formats staged files and runs lint and typecheck; the commit-msg hook checks [Conventional Commits](https://www.conventionalcommits.org) with commitlint. `bun install` installs both hooks in a Git checkout.
+`bun run test` runs the migration test against `DATABASE_URL` when it is set. The Git pre-commit hook formats staged files and runs lint and typecheck; the commit-msg hook checks [Conventional Commits](https://www.conventionalcommits.org) with commitlint. `bun install` installs both hooks in a Git checkout.
 
 ## Branches, CI and releases
 
@@ -56,7 +52,7 @@ Work goes into `dev` through pull requests; `dev` is merged into `main` to relea
 
 | Workflow                    | When                        | What                                                                                                                                                                                                        |
 | --------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`                    | push and PR to `main`/`dev` | Install, migrations, lint, typecheck, unit and e2e tests, build                                                                                                                                             |
+| `ci.yml`                    | push and PR to `main`/`dev` | Install, migrations, lint, typecheck, tests, build                                                                                                                                                          |
 | `docker.yml`                | push to `main`/`dev`        | Builds only the changed images on native `linux/arm64` runners and pushes them to GHCR: `latest` + `sha-<commit>` from `main`, `dev` + `sha-<commit>-dev` from `dev`. Then writes the tag to `k8s-practice` |
 | `release.yml`               | after images on `main`      | semantic-release: version, `CHANGELOG.md`, GitHub release, and `v<version>` image tags                                                                                                                      |
 | `dependabot-auto-merge.yml` | Dependabot PRs to `main`    | Approves and auto-merges weekly dependency updates                                                                                                                                                          |
@@ -66,4 +62,4 @@ Repository settings the pipeline reads:
 
 - Secrets `APP_ID`, `APP_PRIVATE_KEY`: the release bot. Without them the release is skipped.
 - Secrets `GITOPS_APP_ID`, `GITOPS_APP_PRIVATE_KEY`, and variables `GITOPS_VALUES_FILE` (main) / `GITOPS_VALUES_FILE_DEV` (dev): the values file in `k8s-practice` to write image tags into. Without the variable the deploy step is skipped.
-- Variables `API_URL` / `DEV_API_URL` and `UNIAUTH_URL` / `DEV_UNIAUTH_URL`: baked into the web image. Without them the Dockerfile defaults are used.
+- Variables `API_URL` / `DEV_API_URL`: baked into the web image. Without them the Dockerfile defaults are used.
