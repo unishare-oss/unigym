@@ -11,7 +11,7 @@ unless the project grows enough to need another scope.
 ```text
 unigym/
 ├── apps/
-│   ├── api/             # NestJS API, Prisma schema and migrations
+│   ├── api/             # Go (Gin) API, goose migrations, sqlc queries
 │   └── web/             # Next.js App Router application
 ├── scripts/             # Local and Oracle database helpers
 ├── plans/               # Project plans
@@ -21,7 +21,7 @@ unigym/
 ```
 
 This is a Bun workspace. Use the root `package.json` scripts and the committed Bun
-lockfile. Keep API implementation in `apps/api` and browser UI in `apps/web`. Share
+lockfile; the API's scripts call the Go toolchain. Keep API implementation in `apps/api` and browser UI in `apps/web`. Share
 contracts only when both workspaces actually need them.
 
 ## Working Rules
@@ -33,8 +33,8 @@ contracts only when both workspaces actually need them.
 - Preserve unrelated local changes. Do not add secrets or print `.env` values.
 - Follow the nearest app guide and existing code patterns. Prefer direct, readable
   changes over speculative layers.
-- The API owns Unigym data and authorization. uniAuth owns portable identity;
-  Unigym keeps its own session and app-specific behavior.
+- The API owns Unigym data and authorization. Auth is removed for now; when it
+  returns, uniAuth owns portable identity and Unigym keeps its own session.
 - For local database work, follow `README.md`: Docker runs on Oracle and is reached
   through the local SSH tunnel. Do not start a second local database by default.
 
