@@ -6,12 +6,15 @@ This file applies to the whole repository. Read the closer guide when working in
 `apps/api` or `apps/web`. Keep instructions in exactly these three `AGENTS.md` files
 unless the project grows enough to need another scope.
 
+If `AGENTS.local.md` exists at the repository root, read it and follow it. It holds one
+developer's personal rules and is gitignored, so it is absent for everyone else.
+
 ## Folder Structure
 
 ```text
 unigym/
 ├── apps/
-│   ├── api/             # NestJS API, Prisma schema and migrations
+│   ├── api/             # Go (Gin) API, goose migrations, sqlc queries
 │   └── web/             # Next.js App Router application
 ├── scripts/             # Local and Oracle database helpers
 ├── plans/               # Project plans
@@ -21,7 +24,7 @@ unigym/
 ```
 
 This is a Bun workspace. Use the root `package.json` scripts and the committed Bun
-lockfile. Keep API implementation in `apps/api` and browser UI in `apps/web`. Share
+lockfile; the API's scripts call the Go toolchain. Keep API implementation in `apps/api` and browser UI in `apps/web`. Share
 contracts only when both workspaces actually need them.
 
 ## Working Rules
@@ -29,12 +32,13 @@ contracts only when both workspaces actually need them.
 - Do not create a git commit or push changes unless the user explicitly asks.
 - Write commit messages as Conventional Commits (`feat(api): ...`, `fix(web): ...`,
   `chore: ...`); commitlint rejects others, and semantic-release versions from them.
+  Don't add `Co-Authored-By` trailers for AI assistants.
 - Branch from `dev` and open pull requests into `dev`. `main` is for releases.
 - Preserve unrelated local changes. Do not add secrets or print `.env` values.
 - Follow the nearest app guide and existing code patterns. Prefer direct, readable
   changes over speculative layers.
-- The API owns Unigym data and authorization. uniAuth owns portable identity;
-  Unigym keeps its own session and app-specific behavior.
+- The API owns Unigym data and authorization. Auth is removed for now; when it
+  returns, uniAuth owns portable identity and Unigym keeps its own session.
 - For local database work, follow `README.md`: Docker runs on Oracle and is reached
   through the local SSH tunnel. Do not start a second local database by default.
 
