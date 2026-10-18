@@ -30,6 +30,8 @@ contracts only when both workspaces actually need them.
 ## Working Rules
 
 - Do not create a git commit or push changes unless the user explicitly asks.
+- Do not credit Claude or any other AI tool as an author or contributor: no
+  `Co-Authored-By` trailers in commits and no "Generated with" lines in PRs.
 - Write commit messages as Conventional Commits (`feat(api): ...`, `fix(web): ...`,
   `chore: ...`); commitlint rejects others, and semantic-release versions from them.
   Don't add `Co-Authored-By` trailers for AI assistants.
