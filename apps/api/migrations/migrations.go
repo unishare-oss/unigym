@@ -20,7 +20,7 @@ func Run(ctx context.Context, databaseURL, command string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	provider, err := goose.NewProvider(goose.DialectPostgres, conn, files)
 	if err != nil {

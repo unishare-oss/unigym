@@ -41,5 +41,6 @@ until auth is redone.
 - Keep tests next to the code (`*_test.go`). Tests that need PostgreSQL skip when
   `DATABASE_URL` is unset.
 - Run `bun run --cwd apps/api lint`, `typecheck`, `test` and `build` as appropriate.
-  Keep code `gofmt`-clean.
+  `lint` runs golangci-lint (`.golangci.yml`, pinned in `go.mod`). Keep code
+  `gofmt`-clean, and discard an error only explicitly (`_ = conn.Close()`), never silently.
 - Use `apps/api/.env.example` as the configuration reference. Never commit secrets.

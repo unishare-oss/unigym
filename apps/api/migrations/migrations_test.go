@@ -23,7 +23,7 @@ func TestUpDropsAuthTables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer conn.Close(ctx)
+	defer func() { _ = conn.Close(ctx) }()
 	var n int
 	err = conn.QueryRow(ctx, `SELECT count(*) FROM information_schema.tables
 		WHERE table_schema = current_schema()
