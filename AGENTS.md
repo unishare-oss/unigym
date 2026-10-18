@@ -32,6 +32,7 @@ contracts only when both workspaces actually need them.
 - Do not create a git commit or push changes unless the user explicitly asks.
 - Write commit messages as Conventional Commits (`feat(api): ...`, `fix(web): ...`,
   `chore: ...`); commitlint rejects others, and semantic-release versions from them.
+  Don't add `Co-Authored-By` trailers for AI assistants.
 - Branch from `dev` and open pull requests into `dev`. `main` is for releases.
 - Preserve unrelated local changes. Do not add secrets or print `.env` values.
 - Follow the nearest app guide and existing code patterns. Prefer direct, readable
