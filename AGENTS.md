@@ -6,6 +6,9 @@ This file applies to the whole repository. Read the closer guide when working in
 `apps/api` or `apps/web`. Keep instructions in exactly these three `AGENTS.md` files
 unless the project grows enough to need another scope.
 
+If `AGENTS.local.md` exists at the repository root, read it and follow it. It holds one
+developer's personal rules and is gitignored, so it is absent for everyone else.
+
 ## Folder Structure
 
 ```text

@@ -10,3 +10,6 @@ coverage/
 apps/*/.env
 apps/*/.env.local
 !**/.env.example
+
+# Personal agent rules
+AGENTS.local.md
